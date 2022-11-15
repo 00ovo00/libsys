@@ -1,0 +1,29 @@
+<!-- - BookBorrow(userID, barcodeNum)
+ 입력창에 userID와 barcodeNum를 input type=“text”로 입력
+- UserControl(userID)
+ 대출 버튼 클릭하면 userID를 UserControl.php로 전송
+- BookControl(barcodeNum)
+ 대출 버튼 클릭하면 barcodeNum를 BookControl.php로 전송
+- PrintBorrowInfo
+ 대출 확인 메시지 전송받은 데이터(bookName, author, callNumber, userID, borrowDate)를 화면에 출력 -->
+ <html>
+<head><title>도서 대출 화면</title>
+<META http-equiv='Content-Type' content='text/html; charset=EUR-KR'>
+</head>
+<body bgcolor="white" text="black" link="blue" vlink="purple" alink="red">
+<div align="center"><table borser="0">
+<tr>
+<td><form name="form" method="post" action="./BorrowBookControl.php>
+    <td colspan=3>
+            사용자 ID : <INPUT type="text" size=10 name="userID"><br><br>
+            바코드 번호 : <INPUT type="text" size=10 name="barcodeNum"> 년<br><br>
+            <center>
+<center>
+	<INPUT type="submit" value="대출">	<INPUT type="reset" value="삭제">
+	</center>
+</tr>
+</table></div>
+</form>
+<p align="center"><b>&nbsp;</b></p>
+</body>
+</html>
