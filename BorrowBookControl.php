@@ -52,8 +52,16 @@ function ck_user($ID)
         // 데이터베이스 레코드들을 차례로 반복하여 검사
         for($i=0; $i<$userNum; $i++) {
             $userRecord = mysql_fetch_row($userData);
-            if($ID == $userRecord[0])       // 사용자 정보 데이터베이스의 첫번째 열 정보가 ID값이라고 설정했을때
-                return true;
+            if($ID == $userRecord[0]){     // 사용자 정보 데이터베이스의 첫번째 열 정보가 ID값이라고 설정했을때
+                                            // 사용자 정보가 존재하면
+                if ($userRecord[3] == true)     // 사용자가 대출 가능 상태이면
+                    return true;
+                else{                           // 사용자가 대출 불가 상태이면
+                    print"<center>대출 불가 상태입니다.</center>";
+                    return false;
+                }
+                    
+            }
         }
         print"<center>등록되지 않은 사용자입니다.</center>";
         return false;
@@ -72,7 +80,13 @@ function ck_book($bNum)
         for($i=0; $i<$bookNum; $i++) {
             $bookRecord = mysql_fetch_row($bookData);
             if($bNum == $bookRecord[0])       // 도서 정보 데이터베이스의 첫번째 열 정보가 바코드 번호라고 설정했을때
-                return true;
+                                            // 도서 정보가 존재하면
+                if ($bookRecord[5] == true)     // 도서가 대출 가능 상태이면
+                    return true;
+                else{                           // 도서가 대출 불가 상태이면
+                    print"<center>대출 불가 도서입니다.</center>";
+                    return false;
+                }
         }
         print"<center>등록되지 않은 도서입니다.</center>";
         return false;
