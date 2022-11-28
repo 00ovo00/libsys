@@ -1,115 +1,136 @@
 <?php
-// UserDBì™€ ì—°ê²°
+// UserDB¿Í ¿¬°á
 function connect_UserDB($ID)
 {
-    $user_database = "USER_INFO";
-    //$connect=mysql_connect('192.168.0.3','lee', 'pass')or die("mySQL ì„œë²„ ì—°ê²° Error!");
+    global $connect;
+    global $userData;
+    global $userNum;
+    global $isUser;
+
+    $user_database = "user_info";
     mysql_select_db($user_database, $connect);
-    $query="select * from user";
+    $query="select * from USER";
     $userData = mysql_query($query, $connect);
-    $userNum = mysql_num_rows($userData);    
-    //ck_user($ID);
-    //mysql_close($connect);
+    $userNum = mysql_num_rows($userData);
+
+    $isUser = ck_user($ID);
 }
-// BookDBì™€ ì—°ê²°
+// BookDB¿Í ¿¬°á
 function connect_BookDB($bNum)
 {
-    $book_database = "BOOK_INFO";
-    //$connect=mysql_connect('192.168.0.3','lee', 'pass')or die("mySQL ì„œë²„ ì—°ê²° Error!");
+    global $connect;
+    global $bookData;
+    global $bookNum;
+    global $isBook;
+
+    $book_database = "book_info";
     mysql_select_db($book_database, $connect);
-    $query="select * from book";
+    $query="select * from BOOK";
     $bookData = mysql_query($query, $connect);
-    $bookNum = mysql_num_rows($bookData);    
-    //ck_book($bNum);
-    //mysql_close($connect);
+    $bookNum = mysql_num_rows($bookData);
+
+    $isBook = ck_book($bNum);
 }
-// RecordDBì™€ ì—°ê²°
-function connect_RecordDB($bNum, $ID)
+// RecordDB¿Í ¿¬°á
+function connect_RecordDB($ID, $bNum, $bDate, $rDate)
 {
-    $record_database = "RECORD_INFO";
-   // $connect=mysql_connect('192.168.0.3','lee', 'pass')or die("mySQL ì„œë²„ ì—°ê²° Error!");
+    global $connect;
+    $record_database = "record";
     mysql_select_db($record_database, $connect);
-    $query = "insert into BORROWRECORD values('', '$ID', '$bnum', '$bDate', '$rDate')";
-    // borrownum(ëŒ€ì¶œê¸°ë¡ì‹ë³„ë²ˆí˜¸)ëŠ” table ìƒì„±ì‹œ auto_incrementë¡œ ìë™ ìƒì„±í•˜ë¯€ë¡œ ê³µë°±ìœ¼ë¡œ ë‚¨ê¹€
-    // 1, 2, 3... ìˆœìœ¼ë¡œ ì¶”ê°€
-    echo "$query"; 
-    //mysql_close($connect);
+    $query = "insert into BORROW_RECORD values('', '$ID', '$bNum', '$bDate', '$rDate')";
+    // borrownum(´ëÃâ±â·Ï½Äº°¹øÈ£)´Â table »ı¼º½Ã auto_increment·Î ÀÚµ¿ »ı¼ºÇÏ¹Ç·Î °ø¹éÀ¸·Î ³²±è
+    // 1, 2, 3... ¼øÀ¸·Î Ãß°¡
+    mysql_query($query,$connect);
 }
-// ì¶œë ¥í•˜ëŠ” í•¨ìˆ˜
+ // »ç¿ëÀÚ À¯È¿¼º °Ë»ç
+function ck_user($ID)
+{
+    global $userData;
+    global $userNum;
+
+    if($ID == null) {
+        print"<center>»ç¿ëÀÚ ¾ÆÀÌµğ¸¦ ÀÔ·ÂÇØÁÖ¼¼¿ä.</center>";
+        return false;
+    }
+    else
+    {
+        // µ¥ÀÌÅÍº£ÀÌ½º ·¹ÄÚµåµéÀ» Â÷·Ê·Î ¹İº¹ÇÏ¿© °Ë»ç
+        for($i=0; $i<$userNum; $i++) {
+            $userRecord = mysql_fetch_row($userData);
+            if($ID == $userRecord[0]){     // »ç¿ëÀÚ Á¤º¸ µ¥ÀÌÅÍº£ÀÌ½ºÀÇ Ã¹¹øÂ° ¿­ Á¤º¸°¡ ID°ªÀÌ¶ó°í ¼³Á¤ÇßÀ»¶§
+                                            // »ç¿ëÀÚ Á¤º¸°¡ Á¸ÀçÇÏ¸é
+                if ($userRecord[3] == true)     // »ç¿ëÀÚ°¡ ´ëÃâ °¡´É »óÅÂÀÌ¸é
+                    return true;
+                else{                           // »ç¿ëÀÚ°¡ ´ëÃâ ºÒ°¡ »óÅÂÀÌ¸é
+                    print"<center>´ëÃâ ºÒ°¡ »óÅÂÀÔ´Ï´Ù.</center>";
+                    return false;
+                }      
+            }
+        }
+        print"<center>µî·ÏµÇÁö ¾ÊÀº »ç¿ëÀÚÀÔ´Ï´Ù.</center>";
+        return false;
+    }
+}
+// µµ¼­ À¯È¿¼º °Ë»ç
+function ck_book($bNum)
+{
+    global $bookData;
+    global $bookNum;
+    if($bNum == null) {
+        print"<center>¹ÙÄÚµå ¹øÈ£¸¦ ÀÔ·ÂÇØÁÖ¼¼¿ä.</center>";
+        return false;
+    }
+    else
+    {
+        // µ¥ÀÌÅÍº£ÀÌ½º ·¹ÄÚµåµéÀ» Â÷·Ê·Î ¹İº¹ÇÏ¿© °Ë»ç
+        for($i=0; $i<$bookNum; $i++) {
+            $bookRecord = mysql_fetch_row($bookData);
+            if($bNum == $bookRecord[0])       // µµ¼­ Á¤º¸ µ¥ÀÌÅÍº£ÀÌ½ºÀÇ Ã¹¹øÂ° ¿­ Á¤º¸°¡ ¹ÙÄÚµå ¹øÈ£¶ó°í ¼³Á¤ÇßÀ»¶§
+                                            // µµ¼­ Á¤º¸°¡ Á¸ÀçÇÏ¸é
+                if ($bookRecord[5] == true)     // µµ¼­°¡ ´ëÃâ °¡´É »óÅÂÀÌ¸é
+                    return true;
+                else{                           // µµ¼­°¡ ´ëÃâ ºÒ°¡ »óÅÂÀÌ¸é
+                    print"<center>´ëÃâ ºÒ°¡ µµ¼­ÀÔ´Ï´Ù.</center>";
+                    return false;
+                }
+        }
+        print"<center>µî·ÏµÇÁö ¾ÊÀº µµ¼­ÀÔ´Ï´Ù.</center>";
+        return false;
+    }
+}
+function update_userDB()
+{
+
+}
+function update_bookDB()
+{
+    
+}
+// Ãâ·ÂÇÏ´Â ÇÔ¼ö
 function print_result($bNum, $ID, $bDate, $rDate)
 {
 
 }
-// ì‚¬ìš©ì ìœ íš¨ì„± ê²€ì‚¬
-function ck_user($ID)
-{
-    if($ID == null) {
-        print"<center>ì‚¬ìš©ì ì•„ì´ë””ë¥¼ ì…ë ¥í•´ì£¼ì„¸ìš”.</center>";
-        return false;
-    }
-    else
-    {
-        // ë°ì´í„°ë² ì´ìŠ¤ ë ˆì½”ë“œë“¤ì„ ì°¨ë¡€ë¡œ ë°˜ë³µí•˜ì—¬ ê²€ì‚¬
-        for($i=0; $i<$userNum; $i++) {
-            $userRecord = mysql_fetch_row($userData);
-            if($ID == $userRecord[0]){     // ì‚¬ìš©ì ì •ë³´ ë°ì´í„°ë² ì´ìŠ¤ì˜ ì²«ë²ˆì§¸ ì—´ ì •ë³´ê°€ IDê°’ì´ë¼ê³  ì„¤ì •í–ˆì„ë•Œ
-                                            // ì‚¬ìš©ì ì •ë³´ê°€ ì¡´ì¬í•˜ë©´
-                if ($userRecord[3] == true)     // ì‚¬ìš©ìê°€ ëŒ€ì¶œ ê°€ëŠ¥ ìƒíƒœì´ë©´
-                    return true;
-                else{                           // ì‚¬ìš©ìê°€ ëŒ€ì¶œ ë¶ˆê°€ ìƒíƒœì´ë©´
-                    print"<center>ëŒ€ì¶œ ë¶ˆê°€ ìƒíƒœì…ë‹ˆë‹¤.</center>";
-                    return false;
-                }
-                    
-            }
-        }
-        print"<center>ë“±ë¡ë˜ì§€ ì•Šì€ ì‚¬ìš©ìì…ë‹ˆë‹¤.</center>";
-        return false;
-    }
-}
-// ë„ì„œ ìœ íš¨ì„± ê²€ì‚¬
-function ck_book($bNum)
-{
-    if($bNum == null) {
-        print"<center>ë°”ì½”ë“œ ë²ˆí˜¸ë¥¼ ì…ë ¥í•´ì£¼ì„¸ìš”.</center>";
-        return false;
-    }
-    else
-    {
-        // ë°ì´í„°ë² ì´ìŠ¤ ë ˆì½”ë“œë“¤ì„ ì°¨ë¡€ë¡œ ë°˜ë³µí•˜ì—¬ ê²€ì‚¬
-        for($i=0; $i<$bookNum; $i++) {
-            $bookRecord = mysql_fetch_row($bookData);
-            if($bNum == $bookRecord[0])       // ë„ì„œ ì •ë³´ ë°ì´í„°ë² ì´ìŠ¤ì˜ ì²«ë²ˆì§¸ ì—´ ì •ë³´ê°€ ë°”ì½”ë“œ ë²ˆí˜¸ë¼ê³  ì„¤ì •í–ˆì„ë•Œ
-                                            // ë„ì„œ ì •ë³´ê°€ ì¡´ì¬í•˜ë©´
-                if ($bookRecord[5] == true)     // ë„ì„œê°€ ëŒ€ì¶œ ê°€ëŠ¥ ìƒíƒœì´ë©´
-                    return true;
-                else{                           // ë„ì„œê°€ ëŒ€ì¶œ ë¶ˆê°€ ìƒíƒœì´ë©´
-                    print"<center>ëŒ€ì¶œ ë¶ˆê°€ ë„ì„œì…ë‹ˆë‹¤.</center>";
-                    return false;
-                }
-        }
-        print"<center>ë“±ë¡ë˜ì§€ ì•Šì€ ë„ì„œì…ë‹ˆë‹¤.</center>";
-        return false;
-    }
-}
 
-// BorrowBookì—ì„œ ì „ì†¡ë°›ì€ ë°ì´í„° ë³€í™˜
+// BorrowBook¿¡¼­ Àü¼Û¹ŞÀº µ¥ÀÌÅÍ º¯È¯
  $ID = $_POST["userID"];
  $bNum = $_POST["barcodeNum"];
- $bDate=date("Ymd");     // ëŒ€ì¶œì¼ìì— ìë™ìœ¼ë¡œ í˜„ì¬ ì¼ìë¥¼ ë°›ì•„ì™€ ì…ë ¥, ì…ë ¥ê°’ ì˜ˆ)20221114
- $rDate=$bDate+14;       // ë°˜ë‚©í•´ì•¼í•˜ëŠ” ì¼ìë¥¼ ëŒ€ì¶œì¼ìì— +14í•˜ì—¬ ê³„ì‚°
- 
- $connect=mysql_connect('192.168.0.3','lee', 'pass')or die("mySQL ì„œë²„ ì—°ê²° Error!");
+ $bDate=date("Ymd");     // ´ëÃâÀÏÀÚ¿¡ ÀÚµ¿À¸·Î ÇöÀç ÀÏÀÚ¸¦ ¹Ş¾Æ¿Í ÀÔ·Â, ÀÔ·Â°ª ¿¹)20221114     
+ $rDate=date("Ymd",strtotime($day."+14 day"));  // ¹İ³³ÇØ¾ßÇÏ´Â ÀÏÀÚ¸¦ ´ëÃâÀÏÀÚ¿¡ +14ÇÏ¿© °è»ê
 
+ $isUser = false;
+ $isBook = false;
+ $userData;
+ $userNum;
+ 
+ $connect=mysql_connect('mydatabase.cojdhegxjiex.ap-northeast-2.rds.amazonaws.com','admin', '08081234')or die("mySQL ¼­¹ö ¿¬°á Error!");
  connect_UserDB($ID);
  connect_BookDB($bNum);
 
- $isUser = ck_user($ID);
- $isBook = ck_book($bNum);
-
+ 
  if($isUser == true && $isBook == true) {
-    connect_RecordDB($bNum, $ID);
-    print_result($bNum, $ID, $bDate, $rDate);
+    connect_RecordDB($ID, $bNum, $bDate, $rDate);
+   // print_result($bNum, $ID, $bDate, $rDate);
  }
  mysql_close($connect);
 
