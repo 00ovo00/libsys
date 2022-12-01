@@ -13,7 +13,6 @@ function connect_UserDB($ID)
     $userData = mysql_query($query, $connect);
     $userNum = mysql_num_rows($userData);
 
-    $isUser = ck_user($ID);
 }
 // BookDB와 연결
 function connect_BookDB($bNum)
@@ -29,7 +28,6 @@ function connect_BookDB($bNum)
     $bookData = mysql_query($query, $connect);
     $bookNum = mysql_num_rows($bookData);
 
-    $isBook = ck_book($bNum);
 }
 // RecordDB와 연결
 function connect_RecordDB($ID, $bNum, $bDate, $rDate)
@@ -47,6 +45,8 @@ function ck_user($ID)
 {
     global $userData;
     global $userNum;
+
+    connect_UserDB($ID);
 
     if($ID == null) {
         print"<center>사용자 아이디를 입력해주세요.</center>";
@@ -76,6 +76,8 @@ function ck_book($bNum)
 {
     global $bookData;
     global $bookNum;
+
+    connect_BookDB($bNum);
     if($bNum == null) {
         print"<center>바코드 번호를 입력해주세요.</center>";
         return false;
@@ -87,7 +89,7 @@ function ck_book($bNum)
             $bookRecord = mysql_fetch_row($bookData);
             if($bNum == $bookRecord[0])       // 도서 정보 데이터베이스의 첫번째 열 정보가 바코드 번호라고 설정했을때
                                             // 도서 정보가 존재하면
-                if ($bookRecord[5] == true)     // 도서가 대출 가능 상태이면
+                if ($bookRecord[5] == false)     // 도서가 대출 가능 상태이면
                     return true;
                 else{                           // 도서가 대출 불가 상태이면
                     print"<center>대출 불가 도서입니다.</center>";
@@ -98,13 +100,45 @@ function ck_book($bNum)
         return false;
     }
 }
-function update_userDB()
+function update_userDB($ID)
 {
+    global $connect;
+    global $userData;
+    global $userNum;
 
+    connect_UserDB($ID);
+
+    for($i=0; $i<$userNum; $i++) {
+        $userRecord = mysql_fetch_row($userData);
+        if($ID == $userRecord[0]){     // 사용자 정보 데이터베이스의 첫번째 열 정보가 ID값이라고 설정했을때
+                                        // 사용자 정보가 일치하면
+            $userRecord[4]++;           // 대출 권수 증가
+            $query = "update USER set BORROWCOUNT='{$userRecord[4]}' where ID='{$userRecord[0]}'";
+            mysql_query($query, $connect);
+            if($userRecord[4] >= 10) {   // 최대 대출 권수 이상이면
+                $userRecord[3] = false;  // 대출 불가 상태로 설정
+                $query = "update USER set ISENABLE='{$userRecord[3]}' where ID='{$userRecord[0]}'";
+            }
+        }      
+    }
 }
-function update_bookDB()
+function update_bookDB($bNum)
 {
-    
+    global $connect;
+    global $bookData;
+    global $bookNum;
+
+    connect_BookDB($bNum);
+
+    for($i=0; $i<$bookNum; $i++) {
+        $bookRecord = mysql_fetch_row($bookData);
+        if($bNum == $bookRecord[0])       // 도서 정보 데이터베이스의 첫번째 열 정보가 바코드 번호라고 설정했을때
+                                        // 도서 정보가 일치하면
+            $bookRecord[5] = true;      // 상태를 대출중으로 변경
+            $query = "update BOOK set ISBORROW='{$bookRecord[5]}' where BARCODENUM='{$bookRecord[0]}'";
+            mysql_query($query, $connect);
+    }
+
 }
 // 출력하는 함수
 function print_result($bNum, $ID, $bDate, $rDate)
@@ -124,12 +158,15 @@ function print_result($bNum, $ID, $bDate, $rDate)
  $userNum;
  
  $connect=mysql_connect('mydatabase.cojdhegxjiex.ap-northeast-2.rds.amazonaws.com','admin', '08081234')or die("mySQL 서버 연결 Error!");
- connect_UserDB($ID);
- connect_BookDB($bNum);
+
+ $isUser = ck_user($ID);
+ $isBook = ck_book($bNum);
 
  
  if($isUser == true && $isBook == true) {
     connect_RecordDB($ID, $bNum, $bDate, $rDate);
+    update_userDB($ID);
+    update_bookDB($bNum);
    // print_result($bNum, $ID, $bDate, $rDate);
  }
  mysql_close($connect);
