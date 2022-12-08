@@ -39,36 +39,52 @@ function connect_RecordDB($ID, $bNum, $bDate, $rDate)
     mysql_query($query,$connect);
 }
  // 사용자 유효성 검사
-function ck_user($ID)
-{
-    global $userData;
-    global $userNum;
-
-    connect_UserDB($ID);
-
-    if($ID == null) {
-        print"<center>사용자 아이디를 입력해주세요.</center>";
-        return false;
-    }
-    else
-    {
-        // 데이터베이스 레코드들을 차례로 반복하여 검사
-        for($i=0; $i<$userNum; $i++) {
-            $userRecord = mysql_fetch_row($userData);
-            if($ID == $userRecord[0]){     // 사용자 정보 데이터베이스의 첫번째 열 정보가 ID값이라고 설정했을때
-                                            // 사용자 정보가 존재하면
-                if ($userRecord[3] == true)     // 사용자가 대출 가능 상태이면
-                    return true;
-                else{                           // 사용자가 대출 불가 상태이면
-                    print"<center>대출 불가 상태입니다.</center>";
-                    return false;
-                }      
-            }
-        }
-        print"<center>등록되지 않은 사용자입니다.</center>";
-        return false;
-    }
-}
+ function ck_user($ID)
+ {
+     global $userData;
+     global $userNum;
+     global $rrDate;
+ 
+     connect_UserDB($ID);
+ 
+     if($ID == null) {
+         print"<center>사용자 아이디를 입력해주세요.</center>";
+         return false;
+     }
+     else
+     {
+         // 데이터베이스 레코드들을 차례로 반복하여 검사
+         for($i=0; $i<$userNum; $i++) {
+             $userRecord = mysql_fetch_row($userData);
+             if($ID == $userRecord[0]){     // 사용자 정보 데이터베이스의 첫번째 열 정보가 ID값이라고 설정했을때
+                                             // 사용자 정보가 존재하면
+                 // 연체 정보 확인
+                 $overdueCount = $userRecord[5] - ($rrDate - $userRecord[6]);    // 마지막 반납일자와 연체일수를 계산하여 남은 연체일수 업데이트
+                                                                                 // 업데이트할 연체일수  = 이전 연체일수 - (현재날짜 - 마지막으로 반납한 날짜)
+                 if($overdueCount > 0) {     // 연체일수가 남아있으면
+                     $query = "update USER set OVERDUECOUNT='{$overdueCount}' where ID='{$userRecord[0]}'";
+                     mysql_query($query, $connect);  // 남은 연체일수 업데이트
+                 }
+                 else {                      // 연체일수가 0이하가 되면
+                     $overdueCount = 0;      // 연체일수를 0으로 설정(음수값 허용 x)
+                     $query = "update USER set OVERDUECOUNT='{$overdueCount}' where ID='{$userRecord[0]}'";
+                     mysql_query($query, $connect);
+                     $userRecord[3] = true;  // 대출 가능 상태로 변경
+                     $query = "update USER set ISENABLE='{$userRecord[3]}' where ID='{$userRecord[0]}'";
+                     mysql_query($query, $connect);
+                 }
+                 if ($userRecord[3] == true)     // 사용자가 대출 가능 상태이면
+                     return true;
+                 else {                           // 사용자가 대출 불가 상태이면
+                     print"<center>대출 불가 상태입니다.</center>";
+                     return false;
+                 }      
+             }
+         }
+         print"<center>등록되지 않은 사용자입니다.</center>";
+         return false;
+     }
+ }
 // 도서 유효성 검사
 function ck_book($bNum)
 {
@@ -153,6 +169,7 @@ function print_result($bNum, $ID, $bDate, $rDate)
  $bNum = $_POST["barcodeNum"];
  $bDate=date("Ymd");     // 대출일자에 자동으로 현재 일자를 받아와 입력, 입력값 예)20221114     
  $rDate=date("Ymd",strtotime($day."+14 day"));  // 반납해야하는 일자를 대출일자에 +14하여 계산
+ $rrDate=date("Ymd");       // real return Date 실제 반납 일자
 
  $isUser = false;
  $isBook = false;
