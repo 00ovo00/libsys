@@ -6,9 +6,7 @@ function connect_UserDB($ID)
     global $userData;
     global $userNum;
 
-    $user_database = "user_info";
-    mysql_select_db($user_database, $connect);
-    $query="select * from USER";
+    $query="select * from user";
     $userData = mysql_query($query, $connect);
     $userNum = mysql_num_rows($userData);
 
@@ -20,9 +18,7 @@ function connect_BookDB($bNum)
     global $bookData;
     global $bookNum;
 
-    $book_database = "book_info";
-    mysql_select_db($book_database, $connect);
-    $query="select * from BOOK";
+    $query="select * from book";
     $bookData = mysql_query($query, $connect);
     $bookNum = mysql_num_rows($bookData);
 
@@ -31,11 +27,10 @@ function connect_BookDB($bNum)
 function connect_RecordDB($ID, $bNum, $bDate, $rDate)
 {
     global $connect;
-    $record_database = "record";
-    mysql_select_db($record_database, $connect);
-    $query = "insert into BORROW_RECORD values('', '$ID', '$bNum', '$bDate', '$rDate')";
-    // borrownum(대출기록식별번호)는 table 생성시 auto_increment로 자동 생성하므로 공백으로 남김
-    // 1, 2, 3... 순으로 추가
+
+    $query = "insert into BORROW_RECORD values('', '$bNum', '$ID', '$bDate', '$rDate', '')";
+    // BORROWNUM(대출기록식별번호)은 record 생성시 auto_increment로 자동 생성하므로 공백으로 남김
+    // DATE(날짜)는 record 생성시 on update CURRENT_TIMESTAMP로 자동 생성하므로 공백으로 남김
     mysql_query($query,$connect);
 }
  // 사용자 유효성 검사
@@ -61,21 +56,21 @@ function connect_RecordDB($ID, $bNum, $bDate, $rDate)
              if($ID == $userRecord[0]){     // 사용자 정보 데이터베이스의 첫번째 열 정보가 ID값이라고 설정했을때
                                              // 사용자 정보가 존재하면
                  // 연체 정보 확인
-                 $overdueCount = $userRecord[5] - ($rrDate - $userRecord[6]);    // 마지막 반납일자와 연체일수를 계산하여 남은 연체일수 업데이트
+                 $overdueCount = $userRecord[9] - ($rrDate - $userRecord[10]);    // 마지막 반납일자와 연체일수를 계산하여 남은 연체일수 업데이트
                                                                                  // 업데이트할 연체일수  = 이전 연체일수 - (현재날짜 - 마지막으로 반납한 날짜)
                  if($overdueCount > 0) {     // 연체일수가 남아있으면
-                     $query = "update USER set OVERDUECOUNT='{$overdueCount}' where ID='{$userRecord[0]}'";
+                     $query = "update user set OVERDUECOUNT='{$overdueCount}' where userid='{$userRecord[0]}'";
                      mysql_query($query, $connect);  // 남은 연체일수 업데이트
                  }
                  else {                      // 연체일수가 0이하가 되면
                      $overdueCount = 0;      // 연체일수를 0으로 설정(음수값 허용 x)
-                     $query = "update USER set OVERDUECOUNT='{$overdueCount}' where ID='{$userRecord[0]}'";
+                     $query = "update user set OVERDUECOUNT='{$overdueCount}' where userid='{$userRecord[0]}'";
                      mysql_query($query, $connect);
-                     $userRecord[3] = true;  // 대출 가능 상태로 변경
-                     $query = "update USER set ISENABLE='{$userRecord[3]}' where ID='{$userRecord[0]}'";
+                     $userRecord[7] = true;  // 대출 가능 상태로 변경
+                     $query = "update user set ISENABLE='{$userRecord[7]}' where userid='{$userRecord[0]}'";
                      mysql_query($query, $connect);
                  }
-                 if ($userRecord[3] == true)     // 사용자가 대출 가능 상태이면
+                 if ($userRecord[7] == true)     // 사용자가 대출 가능 상태이면
                      return true;
                  else {                           // 사용자가 대출 불가 상태이면
                      print"<center>대출 불가 상태입니다.</center>";
@@ -106,7 +101,7 @@ function ck_book($bNum)
             $bookRecord = mysql_fetch_row($bookData);
             if($bNum == $bookRecord[0])       // 도서 정보 데이터베이스의 첫번째 열 정보가 바코드 번호라고 설정했을때
                                             // 도서 정보가 존재하면
-                if ($bookRecord[5] == false)     // 도서가 대출 가능 상태이면
+                if ($bookRecord[7] == false)     // 도서가 대출 가능 상태이면
                     return true;
                 else{                           // 도서가 대출 불가 상태이면
                     print"<center>대출 불가 도서입니다.</center>";
@@ -129,12 +124,12 @@ function update_userDB($ID)
         $userRecord = mysql_fetch_row($userData);
         if($ID == $userRecord[0]){     // 사용자 정보 데이터베이스의 첫번째 열 정보가 ID값이라고 설정했을때
                                         // 사용자 정보가 일치하면
-            $userRecord[4]++;           // 대출 권수 증가
-            $query = "update USER set BORROWCOUNT='{$userRecord[4]}' where ID='{$userRecord[0]}'";
+            $userRecord[8]++;           // 대출 권수 증가
+            $query = "update user set BORROWCOUNT='{$userRecord[8]}' where userid='{$userRecord[0]}'";
             mysql_query($query, $connect);
-            if($userRecord[4] >= 10) {   // 최대 대출 권수 이상이면
-                $userRecord[3] = false;  // 대출 불가 상태로 설정
-                $query = "update USER set ISENABLE='{$userRecord[3]}' where ID='{$userRecord[0]}'";
+            if($userRecord[8] >= 10) {   // 최대 대출 권수 이상이면
+                $userRecord[7] = false;  // 대출 불가 상태로 설정
+                $query = "update user set ISENABLE='{$userRecord[7]}' where userid='{$userRecord[0]}'";
             }
         }      
     }
@@ -151,11 +146,11 @@ function update_bookDB($bNum)
         $bookRecord = mysql_fetch_row($bookData);
         if($bNum == $bookRecord[0])       // 도서 정보 데이터베이스의 첫번째 열 정보가 바코드 번호라고 설정했을때
                                         // 도서 정보가 일치하면
-            $bookRecord[5] = true;      // 상태를 대출중으로 변경
-            $query = "update BOOK set ISBORROW='{$bookRecord[5]}' where BARCODENUM='{$bookRecord[0]}'";
+            $bookRecord[7] = true;      // 상태를 대출중으로 변경
+            $query = "update book set ISBORROW='{$bookRecord[7]}' where BARCODENUM='{$bookRecord[0]}'";
             mysql_query($query, $connect);
-            $bookRecord[6]++;           // 대출 횟수 증가
-            $query = "update BOOK set BORROWEDCOUNT='{$bookRecord[6]}' where BARCODENUM='{$bookRecord[0]}'";
+            $bookRecord[9]++;           // 대출 횟수 증가
+            $query = "update book set BORROWEDCOUNT='{$bookRecord[9]}' where BARCODENUM='{$bookRecord[0]}'";
             mysql_query($query, $connect);
     }
 
@@ -176,7 +171,9 @@ function print_result($bNum, $ID, $bDate, $rDate)
  $isUser = false;
  $isBook = false;
  
+ $database = "library_management";
  $connect=mysql_connect('mydatabase.cojdhegxjiex.ap-northeast-2.rds.amazonaws.com','admin', '08081234')or die("mySQL 서버 연결 Error!");
+ mysql_select_db($database, $connect);
 
  $isUser = ck_user($ID);    
  $isBook = ck_book($bNum);
