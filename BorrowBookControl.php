@@ -1,6 +1,6 @@
 ﻿<?php
 // UserDB와 연결
-function connect_UserDB($ID)
+function connect_user_table($ID)
 {
     global $connect;
     global $userData;
@@ -12,7 +12,7 @@ function connect_UserDB($ID)
 
 }
 // BookDB와 연결
-function connect_BookDB($bNum)
+function connect_book_table($bNum)
 {
     global $connect;
     global $bookData;
@@ -24,7 +24,7 @@ function connect_BookDB($bNum)
 
 }
 // RecordDB와 연결
-function connect_RecordDB($ID, $bNum, $bDate, $rDate)
+function connect_borrow_record_table($ID, $bNum, $bDate, $rDate)
 {
     global $connect;
 
@@ -42,7 +42,7 @@ function connect_RecordDB($ID, $bNum, $bDate, $rDate)
      global $rrDate;
      global $overdueCount;
  
-     connect_UserDB($ID);
+     connect_user_table($ID);
  
      if($ID == null) {
          print"<center>사용자 아이디를 입력해주세요.</center>";
@@ -88,7 +88,7 @@ function ck_book($bNum)
     global $bookData;
     global $bookNum;
 
-    connect_BookDB($bNum);
+    connect_book_table($bNum);
 
     if($bNum == null) {
         print"<center>바코드 번호를 입력해주세요.</center>";
@@ -112,13 +112,13 @@ function ck_book($bNum)
         return false;
     }
 }
-function update_userDB($ID)
+function update_user_table($ID)
 {
     global $connect;
     global $userData;
     global $userNum;
 
-    connect_UserDB($ID);
+    connect_user_table($ID);
 
     for($i=0; $i<$userNum; $i++) {
         $userRecord = mysql_fetch_row($userData);
@@ -134,13 +134,13 @@ function update_userDB($ID)
         }      
     }
 }
-function update_bookDB($bNum)
+function update_book_table($bNum)
 {
     global $connect;
     global $bookData;
     global $bookNum;
 
-    connect_BookDB($bNum);
+    connect_book_table($bNum);
 
     for($i=0; $i<$bookNum; $i++) {
         $bookRecord = mysql_fetch_row($bookData);
@@ -179,9 +179,9 @@ function print_result($bNum, $ID, $bDate, $rDate)
  $isBook = ck_book($bNum);
 
  if($isUser == true && $isBook == true) {       // 사용자와 도서 정보가 유효한 경우에만
-    connect_RecordDB($ID, $bNum, $bDate, $rDate);       // 대출 승인(대출 데이터를 기록)
-    update_userDB($ID);     // 대출 정보 사용자 DB에 업데이트
-    update_bookDB($bNum);   // 대출 정보 도서 DB에 업데이트
+    connect_borrow_record_table($ID, $bNum, $bDate, $rDate);       // 대출 승인(대출 데이터를 기록)
+    update_user_table($ID);     // 대출 정보 사용자 DB에 업데이트
+    update_book_table($bNum);   // 대출 정보 도서 DB에 업데이트
    // print_result($bNum, $ID, $bDate, $rDate);
  }
  mysql_close($connect);
