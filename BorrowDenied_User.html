@@ -1,156 +1,3 @@
-<?
-// 이전 페이지 데이터 세션으로 받아오기
-echo iconv("EUC-KR", "UTF-8", $row['BARCODENUM']);
-
-session_start();
-$ID = $_SESSION["id"];
-$bNum = $_GET["barcodenum"];
-
-// User table 연결
-function connect_user_table($ID)
-{
-    global $connect;
-    global $userData;
-    global $userNum;
-
-    $query="select * from user";
-    $userData = mysql_query($query, $connect);
-    $userNum = mysql_num_rows($userData);
-
-}
-//Book table 연결
-function connect_book_table($bNum)
-{
-    global $connect;
-    global $bookData;
-    global $bookNum;
-
-    $query="select * from book";
-    $bookData = mysql_query($query, $connect);
-    $bookNum = mysql_num_rows($bookData);
-
-}
-// RecordDB와 연결
-function connect_borrow_record_table($ID, $bNum, $bDate, $rDate)
-{
-    global $connect;
-
-    $query = "insert into BORROW_RECORD values('', '$bNum', '$ID', '$bDate', '$rDate', '')";
-    // BORROWNUM(대출기록식별번호)은 record 생성시 auto_increment로 자동 생성하므로 공백으로 남김
-    // DATE(날짜)는 record 생성시 on update CURRENT_TIMESTAMP로 자동 생성하므로 공백으로 남김
-    mysql_query($query,$connect);
-}
- // 사용자 유효성 검사
- function ck_user($ID)
- {
-     global $connect;
-     global $userData;
-     global $userNum;
-     global $rrDate;
-     global $overdueCount;
- 
-     connect_user_table($ID);
- 
-    // 데이터베이스 레코드들을 차례로 반복하여 검사
-    for($i=0; $i<$userNum; $i++) {
-        $userRecord = mysql_fetch_row($userData);
-        if($ID == $userRecord[0]){     // 사용자 정보 데이터베이스의 첫번째 열 정보가 ID값이라고 설정했을때
-                                        // 사용자 정보가 존재하면
-            // 연체 정보 확인
-            $overdueCount = $userRecord[9] - ($rrDate - $userRecord[10]);    // 마지막 반납일자와 연체일수를 계산하여 남은 연체일수 업데이트
-                                                                            // 업데이트할 연체일수  = 이전 연체일수 - (현재날짜 - 마지막으로 반납한 날짜)
-            if($overdueCount > 0) {     // 연체일수가 남아있으면
-                $query = "update user set OVERDUECOUNT='{$overdueCount}' where userid='{$userRecord[0]}'";
-                mysql_query($query, $connect);  // 남은 연체일수 업데이트
-            }
-            else {                      // 연체일수가 0이하가 되면
-                $overdueCount = 0;      // 연체일수를 0으로 설정(음수값 허용 x)
-                $query = "update user set OVERDUECOUNT='{$overdueCount}' where userid='{$userRecord[0]}'";
-                mysql_query($query, $connect);
-                $userRecord[7] = true;  // 대출 가능 상태로 변경
-                $query = "update user set ISENABLE='{$userRecord[7]}' where userid='{$userRecord[0]}'";
-                mysql_query($query, $connect);
-            }
-            if ($userRecord[7] == true)     // 사용자가 대출 가능 상태이면
-                return true;
-            else {                           // 사용자가 대출 불가 상태이면
-                echo("<script>location.href='BorrowDenied_User.html';</script>");   // 대출 불가 알리는 페이지로 전환
-                return false;
-            }      
-        }
-    }
- }
- // 사용자 정보 업데이트 함수
-function update_user_table($ID)
-{
-    global $connect;
-    global $userData;
-    global $userNum;
-
-    connect_user_table($ID);
-
-    for($i=0; $i<$userNum; $i++) {
-        $userRecord = mysql_fetch_row($userData);
-        if($ID == $userRecord[0]){     // 사용자 정보 데이터베이스의 첫번째 열 정보가 ID값이라고 설정했을때
-                                        // 사용자 정보가 일치하면
-            $userRecord[8]++;           // 대출 권수 증가
-            $query = "update user set BORROWCOUNT='{$userRecord[8]}' where userid='{$userRecord[0]}'";
-            mysql_query($query, $connect);
-            if($userRecord[8] >= 10) {   // 최대 대출 권수 이상이면
-                $userRecord[7] = false;  // 대출 불가 상태로 설정
-                $query = "update user set ISENABLE='{$userRecord[7]}' where userid='{$userRecord[0]}'";
-            }
-        }      
-    }
-}
-// 도서 정보 업데이트 함수
-function update_book_table($bNum)
-{
-    global $connect;
-    global $bookData;
-    global $bookNum;
-
-    connect_book_table($bNum);
-
-    for($i=0; $i<$bookNum; $i++) {
-        $bookRecord = mysql_fetch_row($bookData);
-        if($bNum == $bookRecord[0])       // 도서 정보 데이터베이스의 첫번째 열 정보가 바코드 번호라고 설정했을때
-                                        // 도서 정보가 일치하면
-            $bookRecord[7] = true;      // 상태를 대출중으로 변경
-            $query = "update book set ISBORROW='{$bookRecord[7]}' where BARCODENUM='{$bookRecord[0]}'";
-            mysql_query($query, $connect);
-            $bookRecord[9]++;           // 대출 횟수 증가
-            $query = "update book set BORROWEDCOUNT='{$bookRecord[9]}' where BARCODENUM='{$bookRecord[0]}'";
-            mysql_query($query, $connect);
-    }
-
-}
-
- $bDate=date("Y-m-d");     // 대출일자에 자동으로 현재 일자를 받아와 입력, 입력값 예)20221114     
- $rDate=date("Y-m-d",strtotime($day."+14 day"));  // 반납해야하는 일자를 대출일자에 +14하여 계산
- $rrDate=date("Y-m-d");       // real return Date 실제 반납 일자
-
- $isUser = false;
- $result;
- 
- $database = "library_management";
- $connect=mysql_connect('mydatabase.cojdhegxjiex.ap-northeast-2.rds.amazonaws.com','admin', '08081234')or die("mySQL 서버 연결 Error!");
- mysql_select_db($database, $connect);
-
- $isUser = ck_user($ID);    
-
- if($isUser == true) {       // 사용자정보가 유효한 경우에만
-    connect_borrow_record_table($ID, $bNum, $bDate, $rDate);       // 대출 승인(대출 데이터를 기록)
-    update_user_table($ID);     // 대출 정보 사용자 DB에 업데이트
-    update_book_table($bNum);   // 대출 정보 도서 DB에 업데이트
-     // 대출 정보 출력 위한 데이터 로드
-    $query="select BNAME, AUTHOR, PUBLISHER from book where BARCODENUM='{$bNum}'";
-    $result = mysql_query($query, $connect);
-    $resultrow = mysql_fetch_row($result);
- }
- mysql_close($connect);
-
-?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -325,37 +172,26 @@ function update_book_table($bNum)
 
                     <!-- DataTales Example -->
                     <div class="card shadow mb-4">
-                        <!-- Basic Card Example -->
-                        <div class="card shadow mb-4">
-                                <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary"><?echo($ID);?>님 <? echo iconv("EUC-KR", "UTF-8", $resultrow[0]); ?> 을(를) 대출하였습니다</h6>   
-                                </div>
-                               
-                                <div class="card-body">
-                                <h6 class="m-0 font-weight-bold text-secondary">대출 정보</h6><br>
-                                책제목 : <? echo iconv("EUC-KR", "UTF-8", $resultrow[0]); ?><br>
-                                지은이 : <? echo iconv("EUC-KR", "UTF-8", $resultrow[1]); ?><br>
-                                출판사 : <? echo iconv("EUC-KR", "UTF-8", $resultrow[2]); ?><br>
-                                대출한 날짜 : <? echo iconv("EUC-KR", "UTF-8", $bDate); ?><br>
-                                반납해야 할 날짜 : <? echo iconv("EUC-KR", "UTF-8", $rDate); ?>
-                                </div>
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">대출 불가 사용자입니다</h6>
                         </div>
-                    <div class="col-lg-6">
+
+                        <div class="col-lg-6">
 
 
                 <!-- /.container-fluid -->
 
             </div>
-            <!-- End of Main Content
+            <!-- End of Main Content -->
 
-            <-- Footer -->
-            <!-- <footer class="sticky-footer bg-white">
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
                 <div class="container my-auto">
                     <div class="copyright text-center my-auto">
                         <span>Copyright &copy; Library Management System 2022</span>
                     </div>
                 </div>
-            </footer> -->
+            </footer>
             <!-- End of Footer -->
 
         </div>
